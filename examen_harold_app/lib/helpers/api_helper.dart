@@ -61,15 +61,9 @@ class ApiHelper {
     if (response.statusCode >= 400) {
       return Response(isSuccess: false, message: body);
     }
-
-    List<Finals> list = [];    
+   
     var decodedJson = jsonDecode(body);
-    if(decodedJson != null){
-        for (var item in decodedJson) {
-          list.add(Finals.fromJson(item));
-        }
-    }
-
-    return Response(isSuccess: true, result: list);
+    
+    return Response(isSuccess: true, result: Finals.fromJson(decodedJson));
   }
 }

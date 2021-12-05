@@ -6,9 +6,11 @@ import 'package:examen_harold_app/helpers/api_helper.dart';
 import 'package:examen_harold_app/models/finals.dart';
 import 'package:examen_harold_app/models/response.dart';
 import 'package:examen_harold_app/models/token.dart';
+import 'package:examen_harold_app/screens/login_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FormScreen extends StatefulWidget {
   final Token token;
@@ -22,7 +24,8 @@ class FormScreen extends StatefulWidget {
 
 class _FormScreenState extends State<FormScreen> {
    bool _showLoader = false;
-   List<Finals> _finals = [];
+   late Finals _finals;
+   bool _changeTextButon = true;
 
   String _email = '';
   String _emailError = '';
@@ -176,10 +179,16 @@ class _FormScreenState extends State<FormScreen> {
   Widget _showButtons() {
     return Container(
       margin: EdgeInsets.only(left: 10, right: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: <Widget>[
-          _showRegisterButton(),
+       child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
+              _showRegisterButton(),
+              SizedBox(width: 20,),
+              _showLogout(),
+            ],
+          ),
         ],
       ),
     );
@@ -189,7 +198,8 @@ class _FormScreenState extends State<FormScreen> {
   Widget _showRegisterButton() {
     return Expanded(
       child: ElevatedButton(
-        child: Text('Registrar Encuesta'),
+        
+        child: _changeTextButon ?  Text('Registrar Encuesta') : Text('Actualizar Encuesta'),
         style: ButtonStyle(
           backgroundColor: MaterialStateProperty.resolveWith<Color>(
               (Set<MaterialState> states) {
@@ -199,6 +209,37 @@ class _FormScreenState extends State<FormScreen> {
         onPressed: () => _register(),
       ),
     );
+  }
+
+
+  Widget _showLogout() {
+    return Expanded(
+      child: ElevatedButton(
+        
+        child: Text('Cerrar Session'),
+        style: ButtonStyle(
+          backgroundColor: MaterialStateProperty.resolveWith<Color>(
+              (Set<MaterialState> states) {
+            return Color(0xFF120E43);
+          }),
+        ),
+        onPressed: () => _logOut(),
+      ),
+    );
+  }
+
+
+  void _logOut() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isRemembered', false);
+    await prefs.setString('userBody', '');
+
+    Navigator.pushReplacement(
+      context, 
+      MaterialPageRoute(
+        builder: (context) => LoginScreen()
+      )
+    ); 
   }
 
 
@@ -305,9 +346,16 @@ class _FormScreenState extends State<FormScreen> {
             AlertDialogAction(key: null, label: 'Aceptar'),
           ]);
       return;
+    }else{
+        await showAlertDialog(
+          context: context,
+          title: 'Exitoso',
+          message: 'Encuesta guardada exitosamente',
+          actions: <AlertDialogAction>[
+            AlertDialogAction(key: null, label: 'Aceptar'),
+          ]);
+      return;
     }
-
-    Navigator.pop(context, 'yes');
   }
 
 
@@ -353,19 +401,22 @@ class _FormScreenState extends State<FormScreen> {
 
     setState(() {
       _finals = response.result;
-      _mapperFinals();
+       if(_finals != null){
+        _emailController.text = _finals.email;
+        _remarksController.text = _finals.remarks;
+        _theBestController.text = _finals.theBest;
+        _theWorstController.text = _finals.theWorst;
+        _rating = _finals.qualification.toDouble();
+        _initialRating =  _finals.qualification.toDouble();
+        _changeTextButon = false;
+        _email = _finals.email;
+        _remarks = _finals.remarks;
+        _theBest = _finals.theBest;
+        _theWorst = _finals.theWorst;
+      }
     });
   }
 
-  void _mapperFinals(){
-      if(_finals.length > 0){
-        _remarks = _finals.first.remarks;
-        _theBest = _finals.first.theBest;
-        _theWorst = _finals.first.theWorst;
-        _email = _finals.first.email;
-        _rating = _finals.first.qualification.toDouble();
-      }
-  }
 
 
   Widget _showRating(){
